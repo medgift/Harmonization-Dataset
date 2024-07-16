@@ -18,7 +18,7 @@ data_dir = '/mnt/nas4/datasets/ToCurate/QA4IQI/FinalDataset-TCIA-MultiCentric/Up
 scanners = ['A1', 'A2', 'B1', 'B2', 'C1', 'D1', 'E1', 'E2', 'F1', 'G1', 'G2', 'H1', 'H2']
 doses = ['1mGy', '3mGy', '6mGy', '10mGy', '14mGy']
 dose = '10mGy'#, '14mGy']
-reconstruction_method = ['FBP']#'FBP']#, 'IR', 'DL']
+reconstruction_method = ['IR']#'FBP']#, 'IR', 'DL']
 save_dir = './figures_scanners'
 registration_mode = 'elastic'#'ants'#'elastic'# 'elastic'#'elstic' #None
 
