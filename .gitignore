@@ -9,6 +9,7 @@ __pycache__/
 *.nii.gz
 ./figures/*
 .vscode/*
+*.txt
 
 # C extensions
 *.so
