@@ -48,55 +48,59 @@ def create_registered_dataset(folder, reference_volume):
     # Register all images in the folder:
     for folder in scan_folders:
         
-        print(f'Registering {folder} ...')
-        # Resulting image:
-        final_file = os.path.join(dataset_dir, os.path.basename(folder) + '.nii.gz')
-        if os.path.exists(final_file):
-            print(f'{final_file} exists. Skipping...')
+        try:
+            print(f'Registering {folder} ...')
+            # Resulting image:
+            final_file = os.path.join(dataset_dir, os.path.basename(folder) + '.nii.gz')
+            if os.path.exists(final_file):
+                print(f'{final_file} exists. Skipping...')
+                continue
+            
+            # Read the image
+            volumes = read_dicom(folder, numpy_format=True, crop_region=crop_region)
+            nifti_image = volumes[-1]
+            
+            # Check if the axial dimension is flipped
+            _ssim0 = rolled_ssim(reference_volumes[0], volumes[0]).item()
+            _ssim1 = rolled_ssim(reference_volumes[0], volumes[2]).item()
+            if _ssim1 > _ssim0:
+                volumes[0] = volumes[2]
+                volumes[1] = volumes[3]
+                print('Axial dimension flipped.')
+            _ssim = max(_ssim0, _ssim1)
+            print(f'SSIM Before Rolling {_ssim:0.4f} ({_ssim1:0.4f})')
+            
+            # Find the shift between the images
+            volumes[0], shift, _ = find_shifts(volumes[0], reference_volumes[0], axis=-1)
+            volumes[1] = np.roll(volumes[1], shift, axis=0)
+            _ssim = ssim(reference_volumes[0], volumes[0]).item()
+            print(f'SSIM Before Registration {_ssim:0.4f}')
+
+            # Register the reference image
+            registered_image = registrator.register_image(volumes[1], downsample_factor=downsample_factor)[0]     
+            
+            # Convert to tensor
+            registered_image_tensor = array_to_tensor(registered_image.transpose(1,2,0))
+
+            # Calculate the SSIM
+            _ssim = ssim(reference_volumes[0], registered_image_tensor).item()
+            print(f'{_ssim:0.4f}')
+
+            # Crop the shape out of the image
+            #registered_image = registered_image[100:,...] 
+            registered_image_nifti = registered_image.transpose(2,1,0)  
+            registered_image_nifti = flip_volume(registered_image_nifti, axis=1)
+            #registered_image_nifti = flip_volume(registered_image_nifti, axis=1)
+            
+            # Save the registered image
+            registered_nifti = nib.Nifti1Image(registered_image_nifti.astype(float), nifti_image.affine)
+            registered_nifti.to_filename('result.nii.gz')
+
+            # Move the saved nifti to the dataset folder:
+            shutil.move('result.nii.gz', final_file)
+        except:
+            print(f'Error in {folder}')
             continue
-        
-        # Read the image
-        volumes = read_dicom(folder, numpy_format=True, crop_region=crop_region)
-        nifti_image = volumes[-1]
-        
-        # Check if the axial dimension is flipped
-        _ssim0 = rolled_ssim(reference_volumes[0], volumes[0]).item()
-        _ssim1 = rolled_ssim(reference_volumes[0], volumes[2]).item()
-        if _ssim1 > _ssim0:
-            volumes[0] = volumes[2]
-            volumes[1] = volumes[3]
-            print('Axial dimension flipped.')
-        _ssim = max(_ssim0, _ssim1)
-        print(f'SSIM Before Rolling {_ssim:0.4f} ({_ssim1:0.4f})')
-        
-        # Find the shift between the images
-        volumes[0], shift, _ = find_shifts(volumes[0], reference_volumes[0], axis=-1)
-        volumes[1] = np.roll(volumes[1], shift, axis=0)
-        _ssim = ssim(reference_volumes[0], volumes[0]).item()
-        print(f'SSIM Before Registration {_ssim:0.4f}')
-
-        # Register the reference image
-        registered_image = registrator.register_image(volumes[1], downsample_factor=downsample_factor)[0]     
-        
-        # Convert to tensor
-        registered_image_tensor = array_to_tensor(registered_image.transpose(1,2,0))
-
-        # Calculate the SSIM
-        _ssim = ssim(reference_volumes[0], registered_image_tensor).item()
-        print(f'{_ssim:0.4f}')
-
-        # Crop the shape out of the image
-        #registered_image = registered_image[100:,...] 
-        registered_image_nifti = registered_image.transpose(2,1,0)  
-        registered_image_nifti = flip_volume(registered_image_nifti, axis=1)
-        #registered_image_nifti = flip_volume(registered_image_nifti, axis=1)
-        
-        # Save the registered image
-        registered_nifti = nib.Nifti1Image(registered_image_nifti.astype(float), nifti_image.affine)
-        registered_nifti.to_filename('result.nii.gz')
-
-        # Move the saved nifti to the dataset folder:
-        shutil.move('result.nii.gz', final_file)
     
 if __name__ == '__main__':
     create_registered_dataset(data_dir, reference_volume_dir)
