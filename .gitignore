@@ -6,6 +6,7 @@ __pycache__/
 # Data
 *.csv
 *.png
+*.nii.gz
 ./figures/*
 .vscode/*
 
