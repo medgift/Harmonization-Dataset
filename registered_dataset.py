@@ -2,7 +2,7 @@
 # Usage: python3 create_registered_dataset.py <folder> <reference volume>
 
 import os
-import sys
+import random
 import shutil
 import numpy as np
 import nibabel as nib
@@ -33,6 +33,8 @@ def create_registered_dataset(folder, reference_volume):
 
     # List of the images to be registered:
     scan_folders = sorted(glob(os.path.join(data_dir, scanners, f'*{dose}*{reconstruction_method}*')))
+    # Randomly shuffle the list
+    random.shuffle(scan_folders)
 
     # Create the registered dataset directory:
     os.makedirs(dataset_dir, exist_ok=True)
