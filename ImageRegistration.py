@@ -15,7 +15,7 @@ class ImageRegistrator:
             # Define the defualt parameters of the elastix registration:
             self.parameter_object = itk.ParameterObject.New()
             self.default_parameter_map = self.parameter_object.GetDefaultParameterMap('rigid')
-            #self.default_parameter_map['MaximumNumberOfIterations'] = ['1000']
+            #self.default_parameter_map['MaximumNumberOfIterations'] = ['10']
             self.parameter_object.AddParameterMap(self.default_parameter_map)
             # Overwrite the default parameters with the user-defined parameters
             if params is not None:
@@ -44,14 +44,15 @@ class ImageRegistrator:
 
     def register_image_elastic(self, moving_image, reference_image=None, downsample_factor=4):
         # Register the image using elastix registration
-        if self.reference_image is None:
-            if reference_image is None:
+        if reference_image is None:
+            if self.reference_image is None:
                 raise ValueError('Reference image is required!')
             else:
-                fixed_image = self.get_image(reference_image)
+                reference_image = self.reference_image
+                fixed_image = reference_image
         else:
-            reference_image = self.reference_image
-            fixed_image = reference_image
+            fixed_image = self.get_image(reference_image)
+        
         moving_image = self.get_image(moving_image)
 
         # Downsample the images by a factor of 4

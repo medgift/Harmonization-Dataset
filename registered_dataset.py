@@ -20,7 +20,8 @@ reconstruction_method = '*'#'FBP'#, 'IR', 'DL'
 dataset_dir = '/mnt/nas7/data/reza/registered_dataset/'
 registration_mode = 'elastic' #'ants'
 ssim_data_range = 2000
-crop_region = [20,330,120,395,64,445]
+#crop_region = [20,330,120,395,64,445]
+crop_region = [13,323,120,395,64,445]
 downsample_factor = 1
 
 def create_registered_dataset(folder, reference_volume):
@@ -29,7 +30,7 @@ def create_registered_dataset(folder, reference_volume):
     ssim = metrics.SSIMMetric(spatial_dims=3, data_range=ssim_data_range)
 
     # Read the reference volume
-    reference_volumes = read_dicom(reference_volume_dir, numpy_format=True, crop_region=crop_region)
+    reference_volumes = read_dicom(reference_volume_dir, numpy_format=True, crop_region=None)
 
     # List of the images to be registered:
     scan_folders = sorted(glob(os.path.join(data_dir, scanners, f'*{dose}*{reconstruction_method}*')))
@@ -57,8 +58,10 @@ def create_registered_dataset(folder, reference_volume):
                 continue
             
             # Read the image
-            volumes = read_dicom(folder, numpy_format=True, crop_region=crop_region)
+            volumes = read_dicom(folder, numpy_format=True, crop_region=None)
             nifti_image = volumes[-1]
+            
+            _ssim = ssim(reference_volumes[0], volumes[0]).item()
             
             # Check if the axial dimension is flipped
             _ssim0 = rolled_ssim(reference_volumes[0], volumes[0]).item()
@@ -67,8 +70,8 @@ def create_registered_dataset(folder, reference_volume):
                 volumes[0] = volumes[2]
                 volumes[1] = volumes[3]
                 print('Axial dimension flipped.')
-            _ssim = max(_ssim0, _ssim1)
-            print(f'SSIM Before Rolling {_ssim:0.4f} ({_ssim1:0.4f})')
+            #_ssim = max(_ssim0, _ssim1)
+            print(f'SSIM Before Rolling {_ssim:0.4f} ({_ssim0:0.4f}, {_ssim1:0.4f})')
             
             # Find the shift between the images
             volumes[0], shift, _ = find_shifts(volumes[0], reference_volumes[0], axis=-1)
@@ -76,14 +79,19 @@ def create_registered_dataset(folder, reference_volume):
             _ssim = ssim(reference_volumes[0], volumes[0]).item()
             print(f'SSIM Before Registration {_ssim:0.4f}')
 
+            # Crop the volumes to the region of interest
+            volume = volumes[1][crop_region[0]:crop_region[1], crop_region[2]:crop_region[3], crop_region[4]:crop_region[5]]
+            reference_volume = reference_volumes[1][crop_region[0]:crop_region[1], crop_region[2]:crop_region[3], crop_region[4]:crop_region[5]]
+
             # Register the reference image
-            registered_image = registrator.register_image(volumes[1], downsample_factor=downsample_factor)[0]     
+            registered_image = registrator.register_image(volume, reference_volume, downsample_factor=downsample_factor)[0]     
             
             # Convert to tensor
             registered_image_tensor = array_to_tensor(registered_image.transpose(1,2,0))
+            reference_volume_tensor = array_to_tensor(reference_volume.transpose(1,2,0))
 
             # Calculate the SSIM
-            _ssim = ssim(reference_volumes[0], registered_image_tensor).item()
+            _ssim = ssim(reference_volume_tensor, registered_image_tensor).item()
             print(f'{_ssim:0.4f}')
 
             # Crop the shape out of the image
