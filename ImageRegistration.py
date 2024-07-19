@@ -15,7 +15,7 @@ class ImageRegistrator:
             # Define the defualt parameters of the elastix registration:
             self.parameter_object = itk.ParameterObject.New()
             self.default_parameter_map = self.parameter_object.GetDefaultParameterMap('rigid')
-            #self.default_parameter_map['MaximumNumberOfIterations'] = ['10']
+            #self.default_parameter_map['MaximumNumberOfIterations'] = ['1000']
             self.parameter_object.AddParameterMap(self.default_parameter_map)
             # Overwrite the default parameters with the user-defined parameters
             if params is not None:

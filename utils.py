@@ -9,6 +9,7 @@ from glob import glob
 from monai import metrics
 import matplotlib.pyplot as plt
 from scipy.ndimage import zoom
+import nibabel as nib
 import dcmstack
 
 level_window_torch = lambda x, level, window: torch.clamp(x,  level - window / 2, level + window/2)
@@ -25,11 +26,22 @@ def flip_volume(volume, axis=0):
     volume_flipped = np.swapaxes(volume_flipped, axis, 0)
     return volume_flipped
 
+def replace_missing_values(ds):
+    for elem in ds:
+        if elem.value is None:
+            elem.value = 11111111
+    return ds
+
 def dicom_to_nifti(dicom_dataset):
     # Extract pixel data and stack into a 3D array
     image_stack = dcmstack.DicomStack()
+    # try:
     for ds in dicom_dataset:
-        image_stack.add_dcm(ds)
+        try:
+            image_stack.add_dcm(ds)
+        except:
+            ds = replace_missing_values(ds)
+            image_stack.add_dcm(ds)
     image_nifti = image_stack.to_nifti()
     return image_nifti
 
@@ -47,8 +59,12 @@ def read_dicom(dicom_dir, numpy_format=False, crop_region=[40,280,120,395,64,445
             slices.append(ds)
    
     # Sort slices by Slice Location
-    dicom_dataset = sorted(slices, key=lambda ds: -ds.InstanceNumber)
-    image_nifti = dicom_to_nifti(dicom_dataset)
+    try:
+        dicom_dataset = sorted(slices, key=lambda ds: -ds.InstanceNumber)
+        image_nifti = dicom_to_nifti(dicom_dataset)
+    except:
+        dicom_dataset = sorted(slices, key=lambda ds: ds.SliceLocation)
+        image_nifti = dicom_to_nifti(dicom_dataset)
 
     # Sort slices by Image Position Patient (z-axis position)
     # slices.sort(key=lambda ds: ds.ImagePositionPatient[2])
