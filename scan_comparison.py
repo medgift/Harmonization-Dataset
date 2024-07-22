@@ -7,15 +7,15 @@ from matplotlib import pyplot as plt
 import nibabel as nib
 from skimage.transform import resize
 from utils import flip_volume
-
+from PIL import Image
 # Data directory
 registered_dataset_dir = '/mnt/nas7/data/reza/registered_dataset'
 scanners = ['A1', 'A2', 'B1', 'B2', 'C1', 'D1', 'E1', 'E2', 'F1', 'G1', 'G2', 'H1', 'H2']
 out_dir = 'scanner_comparison'
-#patch_center_cords = [275-185,295]
-patch_center_cords = [275-110,204]
+patch_center_cords = [275-185,295]
+#patch_center_cords = [275-110,204]
 patch_size, magnification = 32, 3
-slice_idx = 141
+slice_idx = 140
 level, window = 0, 1000
 
 # Lambda functions
@@ -50,7 +50,10 @@ def compare_scans(registered_dataset_dir, out_dir, scanners, reconstruction='IR'
 
         patch_data = slice[patch_center_cords[0]-patch_size//2:patch_center_cords[0]+patch_size//2, patch_center_cords[1]-patch_size//2:patch_center_cords[1]+patch_size//2, :].copy()
         # Resize the patch data with a magnification factor
-        patch_data_zoom = resize(patch_data, (patch_size*magnification, patch_size*magnification), anti_aliasing=True)
+        patch_data_pil = Image.fromarray((patch_data*255).astype(np.uint8))
+        patch_data_zoom = patch_data_pil.resize((patch_size*magnification, patch_size*magnification), Image.LANCZOS)
+        patch_data_zoom = np.array(patch_data_zoom)/255
+        #patch_data_zoom = resize(patch_data, (patch_size*magnification, patch_size*magnification), anti_aliasing=False)
 
         # Create a red square at the patch center with patch size
         slice[patch_center_cords[0]-patch_size//2-1:patch_center_cords[0]+patch_size//2+1, patch_center_cords[1]-patch_size//2-1:patch_center_cords[1]+patch_size//2+1, :] = [1, 0, 0]

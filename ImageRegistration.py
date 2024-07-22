@@ -39,7 +39,7 @@ class ImageRegistrator:
         # Upsample the image by a factor of 4
         if isinstance(zoom_factors, int):
             zoom_factors = 3*[zoom_factors]
-        volume = zoom(volume, zoom_factors, order=3) 
+        volume = zoom(volume, zoom_factors, order=1) 
         return volume
 
     def register_image_elastic(self, moving_image, reference_image=None, downsample_factor=4):

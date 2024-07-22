@@ -10,6 +10,7 @@ from glob import glob
 from monai import metrics
 import matplotlib.pyplot as plt
 from scipy.ndimage import zoom
+from utils import read_dicom
 
 # ITK-Snap
 os.environ["ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS"] = "16"
@@ -21,6 +22,10 @@ dose = '10mGy'#, '14mGy']
 reconstruction_method = ['*']#'FBP']#, 'IR', 'DL']
 save_dir = './figures_scanners'
 registration_mode = 'elastic'#'ants'#'elastic'# 'elastic'#'elstic' #None
+
+scanners_list = ['A1', 'A2', 'B1', 'B2', 'C1', 'D1', 'E1', 'E2', 'F1', 'G1', 'G2', 'H1', 'H2']
+thickness =     [2.0,  2.0,  2.0,   2.0, 2.0,  2.5,  2.0,  2.5,  2.5,  2.0,  2.0,  2.0,  2.0]
+slice_thinknesses = {scanners_list[i]: thickness[i] for i in range(len(scanners_list))}
 
 print('Registaration method: ', registration_mode)
 
@@ -38,67 +43,67 @@ def flip_volume(volume):
          volume_flipped[i] = volume[nslides - i - 1]
     return volume_flipped
 
-def read_dicom(dicom_dir, numpy_format=False):
-    # List to hold the image arrays
-    slices = []
-    filenames = sorted(os.listdir(dicom_dir))
-    # Iterate through all files in the directory
-    slice_locations = []
-    for filename in filenames:
-        if not 'mask' in filename and not '.json' in filename:
-            filepath = os.path.join(dicom_dir, filename)
-            # Read the DICOM file
-            ds = pydicom.dcmread(filepath)
-            # Extract the pixel array and add to the list
-            slices.append(ds)
-            slice_locations.append(float(ds.SliceLocation))
+# def read_dicom(dicom_dir, numpy_format=False):
+#     # List to hold the image arrays
+#     slices = []
+#     filenames = sorted(os.listdir(dicom_dir))
+#     # Iterate through all files in the directory
+#     slice_locations = []
+#     for filename in filenames:
+#         if not 'mask' in filename and not '.json' in filename:
+#             filepath = os.path.join(dicom_dir, filename)
+#             # Read the DICOM file
+#             ds = pydicom.dcmread(filepath)
+#             # Extract the pixel array and add to the list
+#             slices.append(ds)
+#             slice_locations.append(float(ds.SliceLocation))
    
-    # Sort slices by Slice Location
-    slices.sort(key=lambda x: float(x.SliceLocation))
+#     # Sort slices by Slice Location
+#     slices.sort(key=lambda x: float(x.SliceLocation))
     
-    # Extract pixel data and stack into a 3D array
-    image_stack = np.stack([s.pixel_array for s in slices], axis=0)
-    image_stack = float(ds.RescaleSlope) * image_stack + float(ds.RescaleIntercept)
-    # Sort slices by Image Position Patient (z-axis position)
-    # slices.sort(key=lambda ds: ds.ImagePositionPatient[2])
+#     # Extract pixel data and stack into a 3D array
+#     image_stack = np.stack([s.pixel_array for s in slices], axis=0)
+#     image_stack = float(ds.RescaleSlope) * image_stack + float(ds.RescaleIntercept)
+#     # Sort slices by Image Position Patient (z-axis position)
+#     # slices.sort(key=lambda ds: ds.ImagePositionPatient[2])
 
-    # Sort slices by Slice Location
-    # sorted_indices = sorted(range(len(slice_locations)), key=lambda k: slice_locations[k])
-    # slices_reoreded = [slices[i] for i in sorted_indices]
-    #slices = [x for _, x in sorted(zip(slice_locations, slices))]
-    # if ['D1', 'E1'] in dicom_dir:
-    #     volume = image_stack
-    # else:
-    #     volume = flip_volume(image_stack)
-    volume = image_stack
-    if volume.shape[0] < 343:
-        # Calculate the zoom factors for each dimension
-        zoom_factors = (343 / volume.shape[0], 1, 1)
-        # Resample the image
-        volume = zoom(volume, zoom_factors, order=3) 
-    # Crop the region of Phantom
-    volume = volume[40:280, 120:395, 64:445]
-    # idx=-76;plt.imshow(np.clip(volume, -500, 1000)[idx,...], 'gray');plt.savefig('fig.png');
-    # Create a 3D numpy array from the sorted slices
-    # volume = np.stack([ds.pixel_array for ds in slices], axis=0)
-    #volume = float(ds.RescaleSlope) * volume + float(ds.RescaleIntercept)
-    #print(ds.RescaleSlope, ds.RescaleIntercept)
-    # if any([item in dicom_dir for item in ['D1', 'E2', 'F1', 'H2']]):
-    #     # volumes2 = np.zeros_like(volume)
-    #     # nslides = volume.shape[0]
-    #     # for i in range(nslides):
-    #     #     volumes2[i] = volume[nslides - i - 1]
-    #     # volume = volumes2
-    #     volume = np.flip(volume, axis=0)
-    volume_flipped = flip_volume(volume)
-    volume = level_window(volume, 500, 3000)
-    if numpy_format:
-        return [torch.tensor(volume.transpose(1, 2, 0)).to(device).float().unsqueeze(0).unsqueeze(0), volume, 
-            torch.tensor(volume_flipped.transpose(1, 2, 0)).to(device).float().unsqueeze(0).unsqueeze(0), volume_flipped]
-    else:
-        # Now 'volume' contains the 3D volume of the DICOM slices
-        # print(volume.shape)
-        return torch.tensor(volume.transpose(1, 2, 0)).to(device).float().unsqueeze(0).unsqueeze(0)
+#     # Sort slices by Slice Location
+#     # sorted_indices = sorted(range(len(slice_locations)), key=lambda k: slice_locations[k])
+#     # slices_reoreded = [slices[i] for i in sorted_indices]
+#     #slices = [x for _, x in sorted(zip(slice_locations, slices))]
+#     # if ['D1', 'E1'] in dicom_dir:
+#     #     volume = image_stack
+#     # else:
+#     #     volume = flip_volume(image_stack)
+#     volume = image_stack
+#     if volume.shape[0] < 343:
+#         # Calculate the zoom factors for each dimension
+#         zoom_factors = (343 / volume.shape[0], 1, 1)
+#         # Resample the image
+#         volume = zoom(volume, zoom_factors, order=3) 
+#     # Crop the region of Phantom
+#     volume = volume[40:280, 120:395, 64:445]
+#     # idx=-76;plt.imshow(np.clip(volume, -500, 1000)[idx,...], 'gray');plt.savefig('fig.png');
+#     # Create a 3D numpy array from the sorted slices
+#     # volume = np.stack([ds.pixel_array for ds in slices], axis=0)
+#     #volume = float(ds.RescaleSlope) * volume + float(ds.RescaleIntercept)
+#     #print(ds.RescaleSlope, ds.RescaleIntercept)
+#     # if any([item in dicom_dir for item in ['D1', 'E2', 'F1', 'H2']]):
+#     #     # volumes2 = np.zeros_like(volume)
+#     #     # nslides = volume.shape[0]
+#     #     # for i in range(nslides):
+#     #     #     volumes2[i] = volume[nslides - i - 1]
+#     #     # volume = volumes2
+#     #     volume = np.flip(volume, axis=0)
+#     volume_flipped = flip_volume(volume)
+#     volume = level_window(volume, 500, 3000)
+#     if numpy_format:
+#         return [torch.tensor(volume.transpose(1, 2, 0)).to(device).float().unsqueeze(0).unsqueeze(0), volume, 
+#             torch.tensor(volume_flipped.transpose(1, 2, 0)).to(device).float().unsqueeze(0).unsqueeze(0), volume_flipped]
+#     else:
+#         # Now 'volume' contains the 3D volume of the DICOM slices
+#         # print(volume.shape)
+#         return torch.tensor(volume.transpose(1, 2, 0)).to(device).float().unsqueeze(0).unsqueeze(0)
 
 def plot_save(img, title='fig.png'):
     slices = img.shape[-1]
@@ -189,15 +194,15 @@ def main():
                 file2 = files_scanner2[k]
                 
                 if registration_mode is None:
-                    img1 = read_dicom(file1)
-                    img2 = read_dicom(file2) 
+                    img1 = read_dicom(file1, slice_thinknesses=slice_thinknesses)
+                    img2 = read_dicom(file2, slice_thinknesses=slice_thinknesses) 
                     if img1.shape != img2.shape:
                         print(f'Error: {file1} and {file2} have different shapes')
                         img1 = img1[:, :, :, :, :min([img1.shape[-1], img2.shape[-1]])]
                         img2 = img2[:, :, :, :, :min([img1.shape[-1], img2.shape[-1]])]
                 elif registration_mode.lower() == 'elastic':
-                    img1 = read_dicom(file1, numpy_format=True)
-                    img2 = read_dicom(file2, numpy_format=True)
+                    img1 = read_dicom(file1, numpy_format=True, slice_thinknesses=slice_thinknesses)
+                    img2 = read_dicom(file2, numpy_format=True, slice_thinknesses=slice_thinknesses)
                     _ssim0 = rolled_ssim(img1[0], img2[0]).item()
                     _ssim1 = rolled_ssim(img1[0], img2[2]).item()
                     if _ssim1 > _ssim0:
@@ -218,8 +223,8 @@ def main():
                     img1, img2 = elastic_results_to_tensor(img1, img2)
 
                 elif registration_mode.lower() == 'ants':
-                    img1 = ants.from_numpy(read_dicom(file1, numpy_format=True))
-                    img2 = ants.from_numpy(read_dicom(file2, numpy_format=True))
+                    img1 = ants.from_numpy(read_dicom(file1, numpy_format=True, slice_thinknesses=slice_thinknesses))
+                    img2 = ants.from_numpy(read_dicom(file2, numpy_format=True, slice_thinknesses=slice_thinknesses))
                     registration_outs = ants.registration(fixed=img1, moving=img2, type_of_transform = 'SyN' )
                     img1, img2 = registration_outs['warpedfixout'], registration_outs['warpedmovout']
                     img1 = torch.tensor(img1.numpy()).to(device).float().unsqueeze(0).unsqueeze(0)

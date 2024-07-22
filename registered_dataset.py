@@ -14,10 +14,13 @@ from utils import read_dicom, rolled_ssim, find_shifts, array_to_tensor, flip_vo
 # Default parameters for file selection
 data_dir = '/mnt/nas4/datasets/ToCurate/QA4IQI/FinalDataset-TCIA-MultiCentric/Upl'
 reference_volume_dir = '/mnt/nas4/datasets/ToCurate/QA4IQI/FinalDataset-TCIA-MultiCentric/Upl/A1/A1_174008_691000_SOMATOM_Definition_Edge_ID23_Harmonized_10mGy_IR_NrFiles_343'
+scanners_list = ['A1', 'A2', 'B1', 'B2', 'C1', 'D1', 'E1', 'E2', 'F1', 'G1', 'G2', 'H1', 'H2']
+thickness = [2.0, 2.0, 2.0, 2.0, 2.0, 2.5, 2.0, 2.5, 2.0, 2.0, 2.0, 2.0, 2.0]
+slice_thinknesses = {scanners_list[i]: thickness[i] for i in range(len(scanners_list))}
 scanners = '*'#['A1', 'A2', 'B1', 'B2', 'C1', 'D1', 'E1', 'E2', 'F1', 'G1', 'G2', 'H1', 'H2']
 dose = '10mGy'
 reconstruction_method = '*'#'FBP'#, 'IR', 'DL'
-dataset_dir = '/mnt/nas7/data/reza/registered_dataset/'
+dataset_dir = '/mnt/nas7/data/reza/registered_dataset2/'
 registration_mode = 'elastic' #'ants'
 ssim_data_range = 2000
 #crop_region = [20,330,120,395,64,445]
@@ -30,7 +33,7 @@ def create_registered_dataset(folder, reference_volume):
     ssim = metrics.SSIMMetric(spatial_dims=3, data_range=ssim_data_range)
 
     # Read the reference volume
-    reference_volumes = read_dicom(reference_volume_dir, numpy_format=True, crop_region=None)
+    reference_volumes = read_dicom(reference_volume_dir, numpy_format=True, crop_region=None, slice_thinknesses=slice_thinknesses)
 
     # List of the images to be registered:
     scan_folders = sorted(glob(os.path.join(data_dir, scanners, f'*{dose}*{reconstruction_method}*')))
@@ -58,7 +61,8 @@ def create_registered_dataset(folder, reference_volume):
                 continue
             
             # Read the image
-            volumes = read_dicom(folder, numpy_format=True, crop_region=None)
+            volumes = read_dicom(folder, numpy_format=True, crop_region=None, slice_thinknesses=slice_thinknesses)
+        
             nifti_image = volumes[-1]
             
             _ssim = ssim(reference_volumes[0], volumes[0]).item()

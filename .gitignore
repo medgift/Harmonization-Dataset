@@ -10,7 +10,7 @@ __pycache__/
 ./figures/*
 .vscode/*
 *.txt
-
+./scanner_comparison/*
 # C extensions
 *.so
 
