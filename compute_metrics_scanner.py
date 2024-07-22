@@ -1,4 +1,4 @@
-# Computer PSNRs for Dose
+# Computer PSNR for Dose
 import os
 import itk
 from ants import image_read, registration
@@ -18,7 +18,7 @@ data_dir = '/mnt/nas4/datasets/ToCurate/QA4IQI/FinalDataset-TCIA-MultiCentric/Up
 scanners = ['A1', 'A2', 'B1', 'B2', 'C1', 'D1', 'E1', 'E2', 'F1', 'G1', 'G2', 'H1', 'H2']
 doses = ['1mGy', '3mGy', '6mGy', '10mGy', '14mGy']
 dose = '10mGy'#, '14mGy']
-reconstruction_method = ['IR']#'FBP']#, 'IR', 'DL']
+reconstruction_method = ['*']#'FBP']#, 'IR', 'DL']
 save_dir = './figures_scanners'
 registration_mode = 'elastic'#'ants'#'elastic'# 'elastic'#'elstic' #None
 
@@ -147,7 +147,7 @@ def find_shifts(img, gt, axis=-1, downsample=4):
 
 def rolled_ssim(img1, img2):
     ssim = metrics.SSIMMetric(spatial_dims=3, data_range=2000)
-    img2, _, _  = find_shifts(img2, img1, axis=-1, downsample=8)
+    img2, _, _  = find_shifts(img2, img1, axis=-1, downsample=16)
     return ssim(img1, img2)
 
 # Main Fucntion
@@ -167,8 +167,8 @@ def main():
         os.makedirs(save_dir)
 
     zeros_matrix = np.zeros((len(scanners), len(scanners)))
-    psrns_mean_matrix, ssims_mean_matrix, rmses_mean_matrix = zeros_matrix.copy(), zeros_matrix.copy(), zeros_matrix.copy()
-    psrns_std_matrix, ssims_std_matrix, rmses_std_matrix = zeros_matrix.copy(), zeros_matrix.copy(), zeros_matrix.copy() 
+    psnrs_mean_matrix, ssims_mean_matrix, rmses_mean_matrix = zeros_matrix.copy(), zeros_matrix.copy(), zeros_matrix.copy()
+    psnrs_std_matrix, ssims_std_matrix, rmses_std_matrix = zeros_matrix.copy(), zeros_matrix.copy(), zeros_matrix.copy() 
     for i in range(len(scanners)):
         for j in range(len(scanners)):
             if i > j:
@@ -176,13 +176,15 @@ def main():
             print(scanners[i], 'compared with',scanners[j])
             files_scanner1 = sorted(glob(os.path.join(data_dir, scanners[i], f'*{dose}*{reconstruction_method[0]}*')))
             files_scanner2 = sorted(glob(os.path.join(data_dir, scanners[j], f'*{dose}*{reconstruction_method[0]}*')))
+            files_scanner1 = [item for item in files_scanner1 if not 'mask' in item]
+            files_scanner2 = [item for item in files_scanner2 if not 'mask' in item]
             if len(files_scanner1) != len(files_scanner2):
                 files_scanner1 = files_scanner1[:min([len(files_scanner1), len(files_scanner2)])]
                 files_scanner2 = files_scanner2[:min([len(files_scanner1), len(files_scanner2)])]
             
-            psrns, ssims, rmses = [], [], []
+            psnrs, ssims, rmses = [], [], []
             #for file1, file2 in zip(files_scanner1, files_scanner2):
-            for k in range(1):
+            for k in range(5):
                 file1 = files_scanner1[k]
                 file2 = files_scanner2[k]
                 
@@ -204,7 +206,7 @@ def main():
                         print('Axial dimension flipped.')
                     _ssim = min(_ssim0, _ssim1)
                     #_ssim = ssim(level_window_torch(img1[0], -500, 1000), level_window_torch(img2[0], -500, 1000)).item()
-                    print(f'SSIM Before Rolling {_ssim:0.4f}')
+                    print(f'SSIM Before Rolling {_ssim0:0.4f} ({_ssim1:0.4f})')
                     img2[0], shift, _ = find_shifts(img2[0], img1[0], axis=-1)
                     img2[1] = np.roll(img2[1], shift, axis=0)
                     _ssim = ssim(img1[0], img2[0]).item()
@@ -230,31 +232,31 @@ def main():
                 _ssim = ssim(img1, img2).item()
                 _rmse = rmse(img1, img2).item()
                 #if _ssim > 0.8:
-                psrns.append(_psnr)
+                psnrs.append(_psnr)
                 ssims.append(_ssim)
                 rmses.append(_rmse)
                 print(f'{_ssim:0.4f}')
-            if len(psrns) == 0:
-                psrns.append([-1, -1, -1])
+            if len(psnrs) == 0:
+                psnrs.append([-1, -1, -1])
                 ssims.append([-1, -1, -1])
                 rmses.append([-1, -1, -1])
             # Metri[i,j] = Metrci[j,i], However it is easier to debug this way:
-            psrns_mean_matrix[j, i] = np.median(np.array(psrns))
-            ssims_mean_matrix[j, i] = np.median(np.array(ssims))
-            rmses_mean_matrix[j, i] = np.median(np.array(rmses))
-            psrns_std_matrix[j, i] = np.std(np.array(psrns))
+            psnrs_mean_matrix[j, i] = np.mean(np.array(psnrs))
+            ssims_mean_matrix[j, i] = np.mean(np.array(ssims))
+            rmses_mean_matrix[j, i] = np.mean(np.array(rmses))
+            psnrs_std_matrix[j, i] = np.std(np.array(psnrs))
             ssims_std_matrix[i, j] = np.std(np.array(ssims))
             rmses_std_matrix[i, j] = np.std(np.array(rmses))
 
     # Print the data for overleaf table
     for i in range(len(scanners)):
-        line = [f'{psrns_mean_matrix[i, j]:0.2f}+{psrns_std_matrix[i, j]:0.2f} & ' for j in range(len(scanners)) if psrns_mean_matrix[i, j] != 0 and j <= i]
+        line = [f'{psnrs_mean_matrix[i, j]:0.4f}+{psnrs_std_matrix[i, j]:0.4f} & ' for j in range(len(scanners)) if psnrs_mean_matrix[i, j] != 0 and j <= i]
         print(f'{scanners[i]} & ' + ''.join(line))
     for i in range(len(scanners)):
-        line = [f'{ssims_mean_matrix[i, j]:0.4f}+{ssims_std_matrix[i, j]:0.4f} & ' for j in range(len(scanners)) if ssims_mean_matrix[i, j] != 0 and j <= i]
+        line = [f'{ssims_mean_matrix[i, j]:0.6f}+{ssims_std_matrix[i, j]:0.6f} & ' for j in range(len(scanners)) if ssims_mean_matrix[i, j] != 0 and j <= i]
         print(f'{scanners[i]} & ' + ''.join(line))
     for i in range(len(scanners)):
-        line = [f'{rmses_mean_matrix[i, j]:0.2f}+{rmses_std_matrix[i, j]:0.2f} & ' for j in range(len(scanners)) if rmses_mean_matrix[i, j] != 0 and j <= i]
+        line = [f'{rmses_mean_matrix[i, j]:0.4f}+{rmses_std_matrix[i, j]:0.4f} & ' for j in range(len(scanners)) if rmses_mean_matrix[i, j] != 0 and j <= i]
         print(f'{scanners[i]} & ' + ''.join(line))
                 
 if __name__ == '__main__':
