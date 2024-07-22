@@ -79,11 +79,6 @@ def read_dicom(dicom_dir, numpy_format=False, crop_region=[40,280,120,395,64,445
     #     volume = flip_volume(image_stack)
     volume = np.stack([ds.pixel_array for ds in dicom_dataset], axis=0)
     volume = float(ds.RescaleSlope) * volume + float(ds.RescaleIntercept)
-    # if volume.shape[0] < 343:
-    #     # Calculate the zoom factors for each dimension
-    #     zoom_factors = (343 / volume.shape[0], 1, 1)
-    #     # Resample the image
-    #     volume = zoom(volume, zoom_factors, order=1)
     # if slice_thinknesses is not None:
     #     scanners_list = slice_thinknesses.keys()
     #     scanner_volume = [item for item in scanners_list if item in dicom_dir][0]
@@ -97,6 +92,11 @@ def read_dicom(dicom_dir, numpy_format=False, crop_region=[40,280,120,395,64,445
             slices_2 = volume.shape[0]
             shift = (slices_2 - 343) // 2
             volume = volume[shift:shift+343, ...]
+    if volume.shape[0] != 343:
+        # Calculate the zoom factors for each dimension
+        zoom_factors = (343 / volume.shape[0], 1, 1)
+        # Resample the image
+        volume = zoom(volume, zoom_factors, order=1)
         
     # Crop the region of Phantom
     if crop_region:

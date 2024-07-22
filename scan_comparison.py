@@ -9,14 +9,15 @@ from skimage.transform import resize
 from utils import flip_volume
 from PIL import Image
 # Data directory
-registered_dataset_dir = '/mnt/nas7/data/reza/registered_dataset'
+registered_dataset_dir = '/mnt/nas7/data/reza/registered_dataset2'
 scanners = ['A1', 'A2', 'B1', 'B2', 'C1', 'D1', 'E1', 'E2', 'F1', 'G1', 'G2', 'H1', 'H2']
 out_dir = 'scanner_comparison'
 patch_center_cords = [275-185,295]
-#patch_center_cords = [275-110,204]
+patch_center_cords = [275-110,204]
 patch_size, magnification = 32, 3
 slice_idx = 140
 level, window = 0, 1000
+reconstruction = '*'#'IR' 'DL' 'FBP'
 
 # Lambda functions
 level_window = lambda x, level, window: np.clip((x - level + window / 2) / window, 0, 1)
@@ -73,4 +74,4 @@ def compare_scans(registered_dataset_dir, out_dir, scanners, reconstruction='IR'
         plt.close()
 
 if __name__ == '__main__':
-    compare_scans(registered_dataset_dir, out_dir, scanners, reconstruction='IR')
+    compare_scans(registered_dataset_dir, out_dir, scanners, reconstruction=reconstruction)
