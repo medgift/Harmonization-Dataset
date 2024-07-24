@@ -20,7 +20,7 @@ slice_thinknesses = {scanners_list[i]: thickness[i] for i in range(len(scanners_
 scanners = '*'#['A1', 'A2', 'B1', 'B2', 'C1', 'D1', 'E1', 'E2', 'F1', 'G2', 'H1', 'H2']
 dose = '10mGy'
 reconstruction_method = '*'#'FBP'#, 'IR', 'DL'
-dataset_dir = '/mnt/nas7/data/reza/registered_dataset2/'
+dataset_dir = '/mnt/nas7/data/reza/registered_dataset/'
 registration_mode = 'elastic' #'ants'
 ssim_data_range = 2000
 #crop_region = [20,330,120,395,64,445]
@@ -88,6 +88,7 @@ def create_registered_dataset(folder, reference_volume):
             reference_volume = reference_volumes[1][crop_region[0]:crop_region[1], crop_region[2]:crop_region[3], crop_region[4]:crop_region[5]]
 
             # Register the reference image
+            # registered_image = volume
             registered_image = registrator.register_image(volume, reference_volume, downsample_factor=downsample_factor)[0]     
             
             # Convert to tensor
@@ -104,8 +105,13 @@ def create_registered_dataset(folder, reference_volume):
             registered_image_nifti = flip_volume(registered_image_nifti, axis=1)
             #registered_image_nifti = flip_volume(registered_image_nifti, axis=1)
             
+            # Pad the numpy array to the original size of [512,512,343] according to the intial crop [20,330,120,395,64,445]
+            #registered_image_nifti_padded = -1024*np.ones([512,512,343])
+            #registered_image_nifti_padded[64:445,120:395,20:330] = registered_image_nifti
+            
             # Save the registered image
             registered_nifti = nib.Nifti1Image(registered_image_nifti.astype(float), nifti_image.affine)
+            #registered_nifti = nib.Nifti1Image(registered_image_nifti_padded.astype(float), nifti_image.affine)
             registered_nifti.to_filename('result.nii.gz')
 
             # Move the saved nifti to the dataset folder:

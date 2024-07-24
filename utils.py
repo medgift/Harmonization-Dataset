@@ -51,7 +51,7 @@ def read_dicom(dicom_dir, numpy_format=False, crop_region=[40,280,120,395,64,445
     filenames = sorted(os.listdir(dicom_dir))
     # Iterate through all files in the directory
     for filename in filenames:
-        if not 'mask' in filename and not '.json' in filename:
+        if not 'mask' in filename and not '.json' in filename and not '.nii.gz' in filename:
             filepath = os.path.join(dicom_dir, filename)
             # Read the DICOM file
             ds = pydicom.dcmread(filepath)

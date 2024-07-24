@@ -9,14 +9,14 @@ from skimage.transform import resize
 from utils import flip_volume
 from PIL import Image
 # Data directory
-registered_dataset_dir = '/mnt/nas7/data/reza/registered_dataset2'
+registered_dataset_dir = '/mnt/nas7/data/reza/registered_dataset_v2'
 scanners = ['A1', 'A2', 'B1', 'B2', 'C1', 'D1', 'E1', 'E2', 'F1', 'G1', 'G2', 'H1', 'H2']
 out_dir = 'scanner_comparison'
 patch_center_cords = [275-185,295]
 patch_center_cords = [275-110,204]
 patch_size, magnification = 32, 3
 slice_idx = 140
-level, window = 0, 1000
+level, window = 30, 150#0, 1000
 reconstruction = '*'#'IR' 'DL' 'FBP'
 
 # Lambda functions
@@ -25,7 +25,7 @@ level_window = lambda x, level, window: np.clip((x - level + window / 2) / windo
 def compare_scans(registered_dataset_dir, out_dir, scanners, reconstruction='IR'):
     # List files:
     all_files = glob(os.path.join(registered_dataset_dir, f'*{reconstruction}*.nii.gz'))
-    scanners_files = {scanner: [f for f in all_files if scanner in f] for scanner in scanners}
+    scanners_files = {scanner: [f for f in all_files if f'{scanner}_' in f] for scanner in scanners}
 
     # Pick one file per scanner
     random_seed = 0
