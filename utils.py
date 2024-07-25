@@ -48,10 +48,10 @@ def dicom_to_nifti(dicom_dataset):
 def read_dicom(dicom_dir, numpy_format=False, crop_region=[40,280,120,395,64,445], device='cuda', slice_thinknesses=None):
     # List to hold the image arrays
     slices = []
-    filenames = sorted(os.listdir(dicom_dir))
+    filenames = sorted(glob(os.path.join(dicom_dir, '*')))
     # Iterate through all files in the directory
     for filename in filenames:
-        if not 'mask' in filename and not '.json' in filename and not '.nii.gz' in filename:
+        if not 'mask' in filename and not filename.endswith('.json') and not filename.endswith('.nii.gz'):
             filepath = os.path.join(dicom_dir, filename)
             # Read the DICOM file
             ds = pydicom.dcmread(filepath)

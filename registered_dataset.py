@@ -20,7 +20,7 @@ slice_thinknesses = {scanners_list[i]: thickness[i] for i in range(len(scanners_
 scanners = '*'#['A1', 'A2', 'B1', 'B2', 'C1', 'D1', 'E1', 'E2', 'F1', 'G2', 'H1', 'H2']
 dose = '10mGy'
 reconstruction_method = '*'#'FBP'#, 'IR', 'DL'
-dataset_dir = '/mnt/nas7/data/reza/registered_dataset/'
+dataset_dir = '/mnt/nas7/data/reza/registered_dataset_pad/'
 registration_mode = 'elastic' #'ants'
 ssim_data_range = 2000
 #crop_region = [20,330,120,395,64,445]
@@ -37,6 +37,8 @@ def create_registered_dataset(folder, reference_volume):
 
     # List of the images to be registered:
     scan_folders = sorted(glob(os.path.join(data_dir, scanners, f'*{dose}*{reconstruction_method}*')))
+    # Remove the Nifti files
+    scan_folders = [folder for folder in scan_folders if not '.nii' in folder and not 'mask' in folder]
     # Randomly shuffle the list
     random.shuffle(scan_folders)
 
@@ -106,12 +108,12 @@ def create_registered_dataset(folder, reference_volume):
             #registered_image_nifti = flip_volume(registered_image_nifti, axis=1)
             
             # Pad the numpy array to the original size of [512,512,343] according to the intial crop [20,330,120,395,64,445]
-            #registered_image_nifti_padded = -1024*np.ones([512,512,343])
-            #registered_image_nifti_padded[64:445,120:395,20:330] = registered_image_nifti
+            registered_image_nifti_padded = -1024*np.ones([512,512,343])
+            registered_image_nifti_padded[64:445,120:395,20:330] = registered_image_nifti
             
             # Save the registered image
-            registered_nifti = nib.Nifti1Image(registered_image_nifti.astype(float), nifti_image.affine)
-            #registered_nifti = nib.Nifti1Image(registered_image_nifti_padded.astype(float), nifti_image.affine)
+            #registered_nifti = nib.Nifti1Image(registered_image_nifti.astype(float), nifti_image.affine)
+            registered_nifti = nib.Nifti1Image(registered_image_nifti_padded.astype(float), nifti_image.affine)
             registered_nifti.to_filename('result.nii.gz')
 
             # Move the saved nifti to the dataset folder:
