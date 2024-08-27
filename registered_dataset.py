@@ -18,9 +18,9 @@ scanners_list = ['A1', 'A2', 'B1', 'B2', 'C1', 'D1', 'E1', 'E2', 'F1', 'G1', 'G2
 thickness = [2.0, 2.0, 2.0, 2.0, 2.0, 2.5, 2.0, 2.5, 2.0, 2.0, 2.0, 2.0, 2.0]
 slice_thinknesses = {scanners_list[i]: thickness[i] for i in range(len(scanners_list))}
 scanners = '*'#['A1', 'A2', 'B1', 'B2', 'C1', 'D1', 'E1', 'E2', 'F1', 'G2', 'H1', 'H2']
-dose = '10mGy'
+dose = '*'#'10mGy'
 reconstruction_method = '*'#'FBP'#, 'IR', 'DL'
-dataset_dir = '/mnt/nas7/data/reza/registered_dataset_pad/'
+dataset_dir = '/mnt/nas7/data/reza/registered_dataset_all_doses/'#/_pad/'
 registration_mode = 'elastic' #'ants'
 ssim_data_range = 2000
 #crop_region = [20,330,120,395,64,445]
@@ -83,6 +83,7 @@ def create_registered_dataset(folder, reference_volume):
             volumes[0], shift, _ = find_shifts(volumes[0], reference_volumes[0], axis=-1)
             volumes[1] = np.roll(volumes[1], shift, axis=0)
             _ssim = ssim(reference_volumes[0], volumes[0]).item()
+            _ssim_before = _ssim
             print(f'SSIM Before Registration {_ssim:0.4f}')
 
             # Crop the volumes to the region of interest
@@ -101,6 +102,10 @@ def create_registered_dataset(folder, reference_volume):
             _ssim = ssim(reference_volume_tensor, registered_image_tensor).item()
             print(f'{_ssim:0.4f}')
 
+            if _ssim < _ssim_before:
+                registered_image = volume
+                print('Registration failed. Using the original image.')
+
             # Crop the shape out of the image
             #registered_image = registered_image[100:,...] 
             registered_image_nifti = registered_image.transpose(2,1,0)  
@@ -110,6 +115,7 @@ def create_registered_dataset(folder, reference_volume):
             # Pad the numpy array to the original size of [512,512,343] according to the intial crop [20,330,120,395,64,445]
             registered_image_nifti_padded = -1024*np.ones([512,512,343])
             registered_image_nifti_padded[64:445,120:395,20:330] = registered_image_nifti
+            registered_image_nifti_padded = registered_image_nifti
             
             # Save the registered image
             #registered_nifti = nib.Nifti1Image(registered_image_nifti.astype(float), nifti_image.affine)

@@ -6,19 +6,21 @@ import numpy as np
 from glob import glob
 from monai import metrics
 import matplotlib.pyplot as plt
-
+import nibabel as nib
+from utils import read_nifti
 # ITK-Snap
 
-data_dir = '/mnt/nas4/datasets/ToCurate/QA4IQI/FinalDataset-TCIA-MultiCentric/Upl'
-scanners = ['H2']#['A1', 'A2', 'B1', 'B2', 'C1', 'D1', 'E1', 'E2', 'F1', 'G1', 'G2', 'H1', 'H2']
+data_dir = '/mnt/nas7/data/reza/registered_dataset_all_doses/'
+scanners = ['A1', 'A2', 'B1', 'B2', 'C1', 'D1', 'E1', 'E2', 'F1', 'G1', 'G2', 'H1', 'H2']
 doses = ['1mGy', '3mGy', '6mGy', '10mGy', '14mGy']
-doses = ['10mGy', '14mGy']
-reconstruction_method = ['FBP']#, 'IR', 'DL']
+#doses = ['10mGy', '14mGy']
+#reconstruction_method = ['FBP']#, 'IR', 'DL']
+reconstruction_method = ''
 save_dir = './figures2'
 
 level_window_torch = lambda x, level, window: torch.clamp((x - level + window / 2) / window, 0, 1)
 level_window = lambda x, level, window: np.clip((x - level + window / 2) / window, 0, 1)
-level, window = 0, 1000
+level, window = 30, 150 #0, 1000
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -49,7 +51,8 @@ def read_dicom(dicom_dir):
 
 def plot_save(img, title='fig.png'):
     slices = img.shape[-1]
-    slice = level_window_torch(img[0, 0, :, :, slices//2], 0, 500).squeeze().cpu().numpy()
+    slices_idx = 140
+    slice = level_window_torch(img[0, 0, :, :, slices_idx], 30, 150).squeeze().cpu().numpy().transpose(1, 0)
     plt.imshow(slice, cmap='gray')
     plt.axis('off')
     plt.savefig(title, bbox_inches='tight', pad_inches=0)
@@ -78,8 +81,8 @@ def main():
     for scanner in scanners:
         doses_files = []
         for dose in doses:
-            dose_files = sorted(glob(os.path.join(data_dir, scanner, f'*{dose}*{reconstruction_method}*')))
-            dose_files = [dose_file for dose_file in dose_files if os.path.isdir(dose_file)]
+            dose_files = sorted(glob(os.path.join(data_dir, f'{scanner}*{dose}*{reconstruction_method}*')))
+            #dose_files = [dose_file for dose_file in dose_files if os.path.isdir(dose_file)]
             doses_files.append(dose_files)
 
         reference_dose = doses_files[-1]
@@ -90,25 +93,27 @@ def main():
             plot_dose = True
             psrns, ssims, rmses = [], [], []
             for file_idx, dose_file in enumerate(dose_files):
-                img = read_dicom(dose_file)
+                if file_idx == 5:
+                    break
+                img = read_nifti(dose_file)
                 try:
-                    gt = read_dicom(reference_dose[file_idx])
+                    gt = read_nifti(reference_dose[file_idx])
                 except:
                     #print(f'GT not found for {dose_file}')
                     continue
-                img, _, _ = find_shifts(img, gt)
+                # img, _, _ = find_shifts(img, gt)
                 if plot_ref:
                     plot_ref = False
-                    plot_save(gt, f'./figures/{scanner}_14mGy_ref.png')
+                    plot_save(gt, f'{save_dir}/{scanner}_14mGy_ref.png')
                 if plot_dose:
                     plot_dose = False
-                    plot_save(img, f'./figures/{scanner}_{doses[dose_idx]}.png')
+                    plot_save(img, f'{save_dir}/{scanner}_{doses[dose_idx]}.png')
                 _psnr = psnr(img, gt).item()
                 _ssim = ssim(img, gt).item()
                 _rmse = rmse(img, gt).item()                    
                 psrns.append(_psnr)
                 ssims.append(_ssim)
-                print(_rmse)
+                # print(_rmse)
                 rmses.append(_rmse)
             if len(psrns) == 0:
                 psrns.append([-1, -1, -1])

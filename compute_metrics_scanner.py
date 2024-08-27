@@ -16,14 +16,18 @@ from utils import read_dicom
 os.environ["ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS"] = "16"
 
 data_dir = '/mnt/nas4/datasets/ToCurate/QA4IQI/FinalDataset-TCIA-MultiCentric/Upl'
-scanners = ['A1', 'A2', 'B1', 'B2', 'C1', 'D1', 'E1', 'E2', 'F1', 'G1', 'G2', 'H1', 'H2']
+#scanners = ['A1', 'A2', 'B1', 'B2', 'C1', 'D1', 'E1', 'E2', 'F1', 'G1', 'G2', 'H1', 'H2']
+# Reordering based on manufacturers:
+scanners = ['A1', 'A2', 'B1', 'B2', 'G1', 'G2', 'C1', 'H2', 'D1', 'E2', 'F1', 'E1', 'H1']
 doses = ['1mGy', '3mGy', '6mGy', '10mGy', '14mGy']
 dose = '10mGy'#, '14mGy']
 reconstruction_method = ['*']#'FBP']#, 'IR', 'DL']
 save_dir = './figures_scanners'
 registration_mode = 'elastic'#'ants'#'elastic'# 'elastic'#'elstic' #None
 
-scanners_list = ['A1', 'A2', 'B1', 'B2', 'C1', 'D1', 'E1', 'E2', 'F1', 'G1', 'G2', 'H1', 'H2']
+#scanners_list = ['A1', 'A2', 'B1', 'B2', 'C1', 'D1', 'E1', 'E2', 'F1', 'G1', 'G2', 'H1', 'H2']
+# Reordering based on manufacturers:
+scanners_list = ['A1', 'A2', 'B1', 'B2', 'G1', 'G2', 'C1', 'H2', 'D1', 'E2', 'F1', 'E1', 'H1']
 thickness =     [2.0,  2.0,  2.0,   2.0, 2.0,  2.5,  2.0,  2.5,  2.5,  2.0,  2.0,  2.0,  2.0]
 slice_thinknesses = {scanners_list[i]: thickness[i] for i in range(len(scanners_list))}
 
@@ -211,11 +215,11 @@ def main():
                         print('Axial dimension flipped.')
                     _ssim = min(_ssim0, _ssim1)
                     #_ssim = ssim(level_window_torch(img1[0], -500, 1000), level_window_torch(img2[0], -500, 1000)).item()
-                    print(f'SSIM Before Rolling {_ssim0:0.4f} ({_ssim1:0.4f})')
+                    print(f'SSIM Before Rolling {_ssim0:0.3f} ({_ssim1:0.3f})')
                     img2[0], shift, _ = find_shifts(img2[0], img1[0], axis=-1)
                     img2[1] = np.roll(img2[1], shift, axis=0)
                     _ssim = ssim(img1[0], img2[0]).item()
-                    print(f'SSIM Before Registration {_ssim:0.4f}')
+                    print(f'SSIM Before Registration {_ssim:0.3f}')
                     # plt.hist(img2[1].flatten());plt.hist(img1[1].flatten());plt.savefig('fig.png');plt.close()
                     # idx=172;plt.imshow(np.clip(img1[1], -500, 1000)[idx,...], 'gray');plt.savefig('fig.png');plt.imshow(np.clip(img2[1], -500, 1000)[idx,...], 'gray');plt.savefig('fig2.png');
 
@@ -240,7 +244,7 @@ def main():
                 psnrs.append(_psnr)
                 ssims.append(_ssim)
                 rmses.append(_rmse)
-                print(f'{_ssim:0.4f}')
+                print(f'{_ssim:0.3f}')
             if len(psnrs) == 0:
                 psnrs.append([-1, -1, -1])
                 ssims.append([-1, -1, -1])
@@ -255,13 +259,13 @@ def main():
 
     # Print the data for overleaf table
     for i in range(len(scanners)):
-        line = [f'{psnrs_mean_matrix[i, j]:0.4f}+{psnrs_std_matrix[i, j]:0.4f} & ' for j in range(len(scanners)) if psnrs_mean_matrix[i, j] != 0 and j <= i]
+        line = [f'{psnrs_mean_matrix[i, j]:0.3f}+{psnrs_std_matrix[i, j]:0.3f} & ' for j in range(len(scanners)) if psnrs_mean_matrix[i, j] != 0 and j <= i]
         print(f'{scanners[i]} & ' + ''.join(line))
     for i in range(len(scanners)):
-        line = [f'{ssims_mean_matrix[i, j]:0.6f}+{ssims_std_matrix[i, j]:0.6f} & ' for j in range(len(scanners)) if ssims_mean_matrix[i, j] != 0 and j <= i]
+        line = [f'{ssims_mean_matrix[i, j]:0.3f}+{ssims_std_matrix[i, j]:0.3f} & ' for j in range(len(scanners)) if ssims_mean_matrix[i, j] != 0 and j <= i]
         print(f'{scanners[i]} & ' + ''.join(line))
     for i in range(len(scanners)):
-        line = [f'{rmses_mean_matrix[i, j]:0.4f}+{rmses_std_matrix[i, j]:0.4f} & ' for j in range(len(scanners)) if rmses_mean_matrix[i, j] != 0 and j <= i]
+        line = [f'{rmses_mean_matrix[i, j]:0.3f}+{rmses_std_matrix[i, j]:0.3f} & ' for j in range(len(scanners)) if rmses_mean_matrix[i, j] != 0 and j <= i]
         print(f'{scanners[i]} & ' + ''.join(line))
                 
 if __name__ == '__main__':

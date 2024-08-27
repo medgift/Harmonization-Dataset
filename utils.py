@@ -123,6 +123,13 @@ def read_dicom(dicom_dir, numpy_format=False, crop_region=[40,280,120,395,64,445
         # print(volume.shape)
         return torch.tensor(volume.transpose(1, 2, 0)).to(device).float().unsqueeze(0).unsqueeze(0)
 
+def read_nifti(file_path, device='cuda'):
+    image = nib.load(file_path).get_fdata()
+    image = image.transpose(1, 0, 2)
+    image = flip_volume(image, axis=0)
+    image = level_window(image, 500, 3000)
+    return torch.tensor(image.transpose(1, 0, 2)).to(device).float().unsqueeze(0).unsqueeze(0)
+
 def plot_save(img, title='fig.png'):
     slices = img.shape[-1]
     slice = level_window_torch(img[0, 0, :, :, slices//2], 0, 500).squeeze().cpu().numpy()
