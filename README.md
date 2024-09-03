@@ -5,7 +5,7 @@ The dataset associated with these analyses is publicly available here:
 
 The dataset is collected by acquiring multiple scans of an anthropomorphic phantom, which includes three different regions: thoracic, liver, and test patterns:
 
-<div style="text-align:center">
+<div style="display: flex; justify-content: center;">
     <img src="readme/phantom.png" />
 </div>
 
