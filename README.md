@@ -3,9 +3,11 @@ This repository contains all the tools to reproduce the Figures and Tables publi
 
 The dataset associated with these analyses is publicly available here:
 
-The dataset is collected through acquiring many scans of an anthromorpic pahntom with three differcent regions including thoracic, liver, and test patterns:
+The dataset is collected by acquiring multiple scans of an anthropomorphic phantom, which includes three different regions: thoracic, liver, and test patterns:
 
-<div style="text-align:center"><img src="readme/phantom.png" /></div>
+<div style="text-align:center">
+    <img src="readme/phantom.png" />
+</div>
 
 # Organization of the Repository:
 There are three files (utils.py, ImageRegistration.py, and registered_dataset.py) which contain the required classes and functions for preprocessing the raw DICOM dataset into NIfTI format. The remaining files correspond to the code for computing results and different measures presented in various Tables and Figures of the paper.
