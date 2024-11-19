@@ -154,15 +154,17 @@ def find_shifts(img, gt, axis=-1, downsample=4):
     shift = np.argmin(rmses)*downsample
     return torch.roll(img, shifts=shift, dims=axis), shift, rmses
 
-def rolled_ssim(img1, img2):
-    ssim = metrics.SSIMMetric(spatial_dims=3, data_range=2000)
+def rolled_ssim(img1, img2, data_range=3000):
+    ssim = metrics.SSIMMetric(spatial_dims=3, data_range=data_range)
     img2, _, _  = find_shifts(img2, img1, axis=-1, downsample=16)
     return ssim(img1, img2)
 
 # Main Fucntion
 def main():
-    psnr = metrics.PSNRMetric(max_val=2000)
-    ssim = metrics.SSIMMetric(spatial_dims=3, data_range=2000)
+    data_range = 4000
+    data_max_val = 3000
+    psnr = metrics.PSNRMetric(max_val=data_max_val)
+    ssim = metrics.SSIMMetric(spatial_dims=3, data_range=data_range)
     rmse = metrics.RMSEMetric()
 
     if not registration_mode is None and registration_mode.lower() == 'elastic':    
@@ -187,13 +189,20 @@ def main():
             files_scanner2 = sorted(glob(os.path.join(data_dir, scanners[j], f'*{dose}*{reconstruction_method[0]}*')))
             files_scanner1 = [item for item in files_scanner1 if not 'mask' in item]
             files_scanner2 = [item for item in files_scanner2 if not 'mask' in item]
+            
+            # Shuffle the two lists of files
+            np.random.seed(42)
+            np.random.shuffle(files_scanner1)
+            np.random.seed(84)
+            np.random.shuffle(files_scanner2)
+            
             if len(files_scanner1) != len(files_scanner2):
                 files_scanner1 = files_scanner1[:min([len(files_scanner1), len(files_scanner2)])]
                 files_scanner2 = files_scanner2[:min([len(files_scanner1), len(files_scanner2)])]
             
             psnrs, ssims, rmses = [], [], []
             #for file1, file2 in zip(files_scanner1, files_scanner2):
-            for k in range(5):
+            for k in range(len(files_scanner1)):
                 file1 = files_scanner1[k]
                 file2 = files_scanner2[k]
                 
@@ -220,6 +229,8 @@ def main():
                     img2[1] = np.roll(img2[1], shift, axis=0)
                     _ssim = ssim(img1[0], img2[0]).item()
                     print(f'SSIM Before Registration {_ssim:0.3f}')
+                    # print(f'Data range {img1[0].min(), img1[0].max()}')
+                    # print(f'Data range {img2[0].min(), img2[0].max()}')
                     # plt.hist(img2[1].flatten());plt.hist(img1[1].flatten());plt.savefig('fig.png');plt.close()
                     # idx=172;plt.imshow(np.clip(img1[1], -500, 1000)[idx,...], 'gray');plt.savefig('fig.png');plt.imshow(np.clip(img2[1], -500, 1000)[idx,...], 'gray');plt.savefig('fig2.png');
 
@@ -250,22 +261,22 @@ def main():
                 ssims.append([-1, -1, -1])
                 rmses.append([-1, -1, -1])
             # Metri[i,j] = Metrci[j,i], However it is easier to debug this way:
-            psnrs_mean_matrix[j, i] = np.mean(np.array(psnrs))
-            ssims_mean_matrix[j, i] = np.mean(np.array(ssims))
-            rmses_mean_matrix[j, i] = np.mean(np.array(rmses))
-            psnrs_std_matrix[j, i] = np.std(np.array(psnrs))
-            ssims_std_matrix[i, j] = np.std(np.array(ssims))
-            rmses_std_matrix[i, j] = np.std(np.array(rmses))
+            psnrs_mean_matrix[j, i] = np.array(psnrs).mean()
+            ssims_mean_matrix[j, i] = np.array(ssims).mean()
+            rmses_mean_matrix[j, i] = np.array(rmses).mean()
+            psnrs_std_matrix[j, i] = np.array(psnrs).std()
+            ssims_std_matrix[j, i] = np.array(ssims).std()
+            rmses_std_matrix[j, i] = np.array(rmses).std()
 
     # Print the data for overleaf table
     for i in range(len(scanners)):
-        line = [f'{psnrs_mean_matrix[i, j]:0.3f}+{psnrs_std_matrix[i, j]:0.3f} & ' for j in range(len(scanners)) if psnrs_mean_matrix[i, j] != 0 and j <= i]
+        line = [f'{psnrs_mean_matrix[i, j]:0.3f}±{psnrs_std_matrix[i, j]:0.3f} & ' for j in range(len(scanners)) if psnrs_mean_matrix[i, j] != 0 and j <= i]
         print(f'{scanners[i]} & ' + ''.join(line))
     for i in range(len(scanners)):
-        line = [f'{ssims_mean_matrix[i, j]:0.3f}+{ssims_std_matrix[i, j]:0.3f} & ' for j in range(len(scanners)) if ssims_mean_matrix[i, j] != 0 and j <= i]
+        line = [f'{ssims_mean_matrix[i, j]:0.3f}±{ssims_std_matrix[i, j]:0.3f} & ' for j in range(len(scanners)) if ssims_mean_matrix[i, j] != 0 and j <= i]
         print(f'{scanners[i]} & ' + ''.join(line))
     for i in range(len(scanners)):
-        line = [f'{rmses_mean_matrix[i, j]:0.3f}+{rmses_std_matrix[i, j]:0.3f} & ' for j in range(len(scanners)) if rmses_mean_matrix[i, j] != 0 and j <= i]
+        line = [f'{rmses_mean_matrix[i, j]:0.3f}±{rmses_std_matrix[i, j]:0.3f} & ' for j in range(len(scanners)) if rmses_mean_matrix[i, j] != 0 and j <= i]
         print(f'{scanners[i]} & ' + ''.join(line))
                 
 if __name__ == '__main__':

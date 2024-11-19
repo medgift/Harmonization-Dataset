@@ -13,6 +13,8 @@ from utils import read_nifti
 data_dir = '/mnt/nas7/data/reza/registered_dataset_all_doses/'
 scanners = ['A1', 'A2', 'B1', 'B2', 'C1', 'D1', 'E1', 'E2', 'F1', 'G1', 'G2', 'H1', 'H2']
 doses = ['1mGy', '3mGy', '6mGy', '10mGy', '14mGy']
+# Reordering based on manufacturers:
+scanners = ['A1', 'A2', 'B1', 'B2', 'G1', 'G2', 'C1', 'H2', 'D1', 'E2', 'F1', 'E1', 'H1']
 #doses = ['10mGy', '14mGy']
 #reconstruction_method = ['FBP']#, 'IR', 'DL']
 reconstruction_method = ''
@@ -71,8 +73,10 @@ def find_shifts(img, gt, axis=-1):
 
 # Main Fucntion
 def main():
-    psnr = metrics.PSNRMetric(max_val=2000)
-    ssim = metrics.SSIMMetric(spatial_dims=3, data_range=2000)
+    data_range = 4000
+    data_max_val = 3000
+    psnr = metrics.PSNRMetric(max_val=data_max_val)
+    ssim = metrics.SSIMMetric(spatial_dims=3, data_range=data_range)
     rmse = metrics.RMSEMetric()
 
     if not os.path.exists(save_dir):
@@ -119,7 +123,9 @@ def main():
                 psrns.append([-1, -1, -1])
                 ssims.append([-1, -1, -1])
                 rmses.append([-1, -1, -1])
-            print(f'{scanner} {doses[dose_idx]} RMSE: {np.median(np.array(rmses)):.4f}+{np.array(rmses).std():.4f}, PSNR: {np.median(np.array(psrns)):.4f}+{np.array(psrns).std():.4f}, SSIM: {np.median(np.array(ssims)):.4f}+{np.array(ssims).std():.4f}')
+            
+            print(f'{scanner} {doses[dose_idx]} RMSE, PSNR, SSIM: {np.array(rmses).mean():.3f}±{np.array(rmses).std():.3f} & {np.array(psrns).mean():.3f}±{np.array(psrns).std():.3f} & {np.array(ssims).mean():.3f}+{np.array(ssims).std():.3f}')
+            
             [psrns, ssims, rmses] = [np.array(item) for item in [psrns, ssims, rmses]]
             average_psrns.append(np.median(psrns))
             std_psrn = psrns.std()
@@ -129,7 +135,7 @@ def main():
             std_rmse = rmses.std()
         [average_rmse, average_psrns, average_ssim] = [np.array(item) for item in [average_rmse, average_psrns, average_ssim]]
         [std_rmse, std_psrn, std_ssim] = [np.array(item) for item in [std_rmse, std_psrn, std_ssim]]
-        print(f'{scanner}   Average RMSE: {average_rmse.mean():.4f}+{average_rmse.std():.4f}, Average PSNR: {average_psrns.mean():.4f}+{average_psrns.std():.4f}, Average SSIM: {average_ssim.mean():.4f}+{average_ssim.std():.4f}')
+        print(f'{scanner}, average RMSE, PSNR, SSIM: {average_rmse.mean():.3f}±{average_rmse.std():.3f} & {average_psrns.mean():.3f}±{average_psrns.std():.3f} & {average_ssim.mean():.3f}±{average_ssim.std():.3f}')
 
 if __name__ == '__main__':
     main()

@@ -11,12 +11,12 @@ from PIL import Image
 # Data directory
 registered_dataset_dir = '/mnt/nas7/data/reza/registered_dataset_v2'
 scanners = ['A1', 'A2', 'B1', 'B2', 'C1', 'D1', 'E1', 'E2', 'F1', 'G1', 'G2', 'H1', 'H2']
-out_dir = 'scanner_comparison'
+out_dir = 'scanner_comparison_test'
 patch_center_cords = [275-185,295]
 patch_center_cords = [275-110,204]
 patch_size, magnification = 32, 3
-slice_idx = 140
-level, window = 30, 150#0, 1000
+slice_idx = 130
+level, window =  50, 400 # 30, 150 # 0, 1000 #
 reconstruction = '*'#'IR' 'DL' 'FBP'
 
 # Lambda functions
@@ -56,14 +56,14 @@ def compare_scans(registered_dataset_dir, out_dir, scanners, reconstruction='IR'
         patch_data_zoom = np.array(patch_data_zoom)/255
         #patch_data_zoom = resize(patch_data, (patch_size*magnification, patch_size*magnification), anti_aliasing=False)
 
-        # Create a red square at the patch center with patch size
-        slice[patch_center_cords[0]-patch_size//2-1:patch_center_cords[0]+patch_size//2+1, patch_center_cords[1]-patch_size//2-1:patch_center_cords[1]+patch_size//2+1, :] = [1, 0, 0]
-        slice[patch_center_cords[0]-patch_size//2:patch_center_cords[0]+patch_size//2, patch_center_cords[1]-patch_size//2:patch_center_cords[1]+patch_size//2, :] = patch_data
+        # # Create a red square at the patch center with patch size
+        # slice[patch_center_cords[0]-patch_size//2-1:patch_center_cords[0]+patch_size//2+1, patch_center_cords[1]-patch_size//2-1:patch_center_cords[1]+patch_size//2+1, :] = [1, 0, 0]
+        # slice[patch_center_cords[0]-patch_size//2:patch_center_cords[0]+patch_size//2, patch_center_cords[1]-patch_size//2:patch_center_cords[1]+patch_size//2, :] = patch_data
 
-        # Create a red square around the zoomed patch
-        slice[-patch_size*magnification-2:, 0:patch_size*magnification+2, :] = [1, 0, 0]
-        # Embed the patch data zommed in the left down corner of the slice 
-        slice[-patch_size*magnification-1:-1, 1:patch_size*magnification+1, :] = patch_data_zoom
+        # # Create a red square around the zoomed patch
+        # slice[-patch_size*magnification-2:, 0:patch_size*magnification+2, :] = [1, 0, 0]
+        # # Embed the patch data zommed in the left down corner of the slice 
+        # slice[-patch_size*magnification-1:-1, 1:patch_size*magnification+1, :] = patch_data_zoom
         
 
         # Plot the slice
