@@ -73,8 +73,8 @@ def find_shifts(img, gt, axis=-1):
 
 # Main Fucntion
 def main():
-    data_range = 4000
-    data_max_val = 3000
+    data_range = 3000
+    data_max_val = 2000
     psnr = metrics.PSNRMetric(max_val=data_max_val)
     ssim = metrics.SSIMMetric(spatial_dims=3, data_range=data_range)
     rmse = metrics.RMSEMetric()
@@ -84,8 +84,11 @@ def main():
 
     for scanner in scanners:
         doses_files = []
+
+        np.random.seed(42)
         for dose in doses:
             dose_files = sorted(glob(os.path.join(data_dir, f'{scanner}*{dose}*{reconstruction_method}*')))
+            np.random.shuffle(dose_files)
             #dose_files = [dose_file for dose_file in dose_files if os.path.isdir(dose_file)]
             doses_files.append(dose_files)
 
@@ -124,7 +127,7 @@ def main():
                 ssims.append([-1, -1, -1])
                 rmses.append([-1, -1, -1])
             
-            print(f'{scanner} {doses[dose_idx]} RMSE, PSNR, SSIM: {np.array(rmses).mean():.3f}±{np.array(rmses).std():.3f} & {np.array(psrns).mean():.3f}±{np.array(psrns).std():.3f} & {np.array(ssims).mean():.3f}+{np.array(ssims).std():.3f}')
+            print(f'{scanner} {doses[dose_idx]} RMSE, PSNR, SSIM: {np.array(rmses).mean():.3f}±{np.array(rmses).std():.3f} & {np.array(psrns).mean():.3f}±{np.array(psrns).std():.3f} & {np.array(ssims).mean():.3f}±{np.array(ssims).std():.3f}')
             
             [psrns, ssims, rmses] = [np.array(item) for item in [psrns, ssims, rmses]]
             average_psrns.append(np.median(psrns))

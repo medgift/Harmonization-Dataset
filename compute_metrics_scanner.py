@@ -161,8 +161,8 @@ def rolled_ssim(img1, img2, data_range=3000):
 
 # Main Fucntion
 def main():
-    data_range = 4000
-    data_max_val = 3000
+    data_range = 3000
+    data_max_val = 2000
     psnr = metrics.PSNRMetric(max_val=data_max_val)
     ssim = metrics.SSIMMetric(spatial_dims=3, data_range=data_range)
     rmse = metrics.RMSEMetric()
